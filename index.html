@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horarios - Estancia San Francisco</title>
+    <style>
+        :root {
+            --bg-crema: #fdfbf7;
+            --bordo: #800020;
+            --bordo-claro: #9e1b34;
+            --amarillo: #d4af37;
+            --texto-oscuro: #333;
+            --borde-gris: #e0dcd3;
+        }
+
+        body {
+            background-color: var(--bg-crema);
+            color: var(--texto-oscuro);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        h2 {
+            color: var(--bordo);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 3px solid var(--amarillo);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .controles-superiores {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-toggle {
+            background-color: var(--amarillo);
+            color: var(--texto-oscuro);
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .btn-toggle:hover {
+            background-color: #c5a02e;
+            transform: translateY(-2px);
+        }
+
+        .contenedor-dias {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .dia-card {
+            background-color: #fff;
+            border: 1px solid var(--borde-gris);
+            border-left: 5px solid var(--bordo);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+
+        .dia-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--bordo);
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--borde-gris);
+            padding-bottom: 5px;
+        }
+
+        .turno-seccion {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #faf9f5;
+            border-radius: 6px;
+            border: 1px solid #f0eee9;
+            transition: all 0.3s;
+        }
+
+        .turno-titulo {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-agregar {
+            background-color: var(--bg-crema);
+            color: var(--bordo);
+            border: 1px solid var(--bordo);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-agregar:hover {
+            background-color: var(--bordo);
+            color: #fff;
+        }
+
+        .fila-empleado {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        select {
+            padding: 6px;
+            border: 1px solid var(--borde-gris);
+            border-radius: 4px;
+            background: #fff;
+            font-size: 0.9rem;
+            color: var(--texto-oscuro);
+            transition: all 0.3s;
+        }
+
+        .sel-nombre { 
+            flex: 1; 
+            min-width: 130px; 
+        }
+        
+        .texto-fijo {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .btn-eliminar {
+            color: #d9534f;
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        /* ======= ESTILOS MODO RESUMEN / PIZARRA ======= */
+        body.modo-resumen { background-color: #f4f1ea; }
+        body.modo-resumen .btn-agregar, body.modo-resumen .btn-eliminar { display: none; }
+        body.modo-resumen select {
+            appearance: none; -webkit-appearance: none;
+            border: none; background: transparent;
+            font-weight: bold; color: var(--bordo);
+            padding: 0; pointer-events: none;
+        }
+        body.modo-resumen .turno-seccion {
+            background-color: transparent; border: none;
+            padding: 5px 0; border-bottom: 1px solid #e0dcd3;
+        }
+        body.modo-resumen .turno-seccion:last-child { border-bottom: none; }
+        body.modo-resumen .dia-card {
+            border: 2px solid var(--bordo);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        }
+        /* ============================================== */
+
+        .contenedor-botones {
+            position: sticky;
+            bottom: 15px;
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .btn-accion {
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .btn-wpp { background-color: #25D366; }
+        .btn-copiar { background-color: #007bff; }
+
+        .btn-accion:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <h2>Horarios - Estancia San Francisco</h2>
+
+    <div class="controles-superiores">
+        <button id="btnToggleResumen" class="btn-toggle" onclick="toggleResumen()">Ver Resumen / Pizarra</button>
+    </div>
+
+    <div class="contenedor-dias" id="contenedor-dias">
+        </div>
+
+    <div class="contenedor-botones">
+        <button class="btn-accion btn-wpp" onclick="enviarWhatsApp()">A WhatsApp</button>
+        <button class="btn-accion btn-copiar" onclick="copiarTexto()">Copiar</button>
+    </div>
+
+    <script>
+        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        
+        const opcionesBisagra = `
+            <option value="14:00">14:00</option>
+            <option value="14:30">14:30</option>
+            <option value="15:00">15:00</option>
+        `;
+
+        const opcionesEmpleados = `
+            <option value="" disabled selected>Empleado...</option>
+            <optgroup label="Gerencia">
+                <option value="Natalia">Natalia</option>
+                <option value="Leandro">Leandro</option>
+            </optgroup>
+            <optgroup label="Turno Mañana">
+                <option value="Érika">Érika</option>
+                <option value="Brian">Brian</option>
+                <option value="Oriana">Oriana</option>
+            </optgroup>
+            <optgroup label="Turno Tarde">
+                <option value="Santiago">Santiago</option>
+                <option value="Julieta">Julieta</option>
+                <option value="Mariel">Mariel</option>
+                <option value="Fernanda">Fernanda</option>
+            </optgroup>
+        `;
+
+        const contenedor = document.getElementById('contenedor-dias');
+        
+        dias.forEach(dia => {
+            const idDia = dia.toLowerCase().replace('é', 'e').replace('á', 'a');
+            
+            if (idDia === 'domingo') {
+                const htmlDia = `
+                    <div class="dia-card" id="card-${idDia}">
+                        <div class="dia-header">${dia}</div>
+                        
+                        <div class="turno-seccion" id="seccion-${idDia}-unico">
+                            <div class="turno-titulo">
+                                <span>Turno Domingo (09:00 a 13:30)</span>
+                                <button class="btn-agregar" onclick="agregarFila('${idDia}-unico', 'domingo')">+ Añadir</button>
+                            </div>
+                            <div id="${idDia}-unico"></div>
+                        </div>
+                    </div>
+                `;
+                contenedor.innerHTML += htmlDia;
+            } else {
+                const htmlDia = `
+                    <div class="dia-card" id="card-${idDia}">
+                        <div class="dia-header">${dia}</div>
+                        
+                        <div class="turno-seccion" id="seccion-${idDia}-manana">
+                            <div class="turno-titulo">
+                                <span>Turno Mañana</span>
+                                <button class="btn-agregar" onclick="agregarFila('${idDia}-manana', 'manana')">+ Añadir</button>
+                            </div>
+                            <div id="${idDia}-manana"></div>
+                        </div>
+
+                        <div class="turno-seccion" id="seccion-${idDia}-tarde">
+                            <div class="turno-titulo">
+                                <span>Turno Tarde</span>
+                                <button class="btn-agregar" onclick="agregarFila('${idDia}-tarde', 'tarde')">+ Añadir</button>
+                            </div>
+                            <div id="${idDia}-tarde"></div>
+                        </div>
+                    </div>
+                `;
+                contenedor.innerHTML += htmlDia;
+            }
+        });
+
+        function agregarFila(contenedorId, tipoTurno) {
+            const cont = document.getElementById(contenedorId);
+            const fila = document.createElement('div');
+            fila.className = 'fila-empleado';
+            
+            if (tipoTurno === 'manana') {
+                fila.innerHTML = `
+                    <select class="sel-nombre" onchange="actualizarColores(this)">
+                        ${opcionesEmpleados}
+                    </select>
+                    <span class="texto-fijo">09:00 a</span>
+                    <select class="sel-salida">${opcionesBisagra}</select>
+                    <button class="btn-eliminar" onclick="this.parentElement.remove()">×</button>
+                `;
+                cont.appendChild(fila);
+                fila.querySelector('.sel-salida').value = '14:00'; 
+            } else if (tipoTurno === 'tarde') {
+                fila.innerHTML = `
+                    <select class="sel-nombre" onchange="actualizarColores(this)">
+                        ${opcionesEmpleados}
+                    </select>
+                    <select class="sel-entrada">${opcionesBisagra}</select>
+                    <span class="texto-fijo">a 20:00</span>
+                    <button class="btn-eliminar" onclick="this.parentElement.remove()">×</button>
+                `;
+                cont.appendChild(fila);
+                fila.querySelector('.sel-entrada').value = '14:30'; 
+            } else if (tipoTurno === 'domingo') {
+                fila.innerHTML = `
+                    <select class="sel-nombre" onchange="actualizarColores(this)">
+                        ${opcionesEmpleados}
+                    </select>
+                    <span class="texto-fijo">09:00 a 13:30</span>
+                    <button class="btn-eliminar" onclick="this.parentElement.remove()">×</button>
+                `;
+                cont.appendChild(fila);
+            }
+        }
+
+        function actualizarColores(selectObj) {
+            if(selectObj.value !== "") {
+                selectObj.style.borderColor = "var(--bordo)";
+                selectObj.style.fontWeight = "bold";
+            }
+        }
+
+        function toggleResumen() {
+            const body = document.body;
+            const btn = document.getElementById('btnToggleResumen');
+            
+            const esModoResumen = body.classList.toggle('modo-resumen');
+
+            if (esModoResumen) {
+                btn.innerHTML = "Volver a Editar";
+                btn.style.backgroundColor = "#fff";
+                btn.style.border = "2px solid var(--bordo)";
+                
+                document.querySelectorAll('.dia-card').forEach(card => {
+                    const filas = card.querySelectorAll('.fila-empleado');
+                    if(filas.length === 0) {
+                        card.style.display = 'none';
+                    } else {
+                        const turnos = card.querySelectorAll('.turno-seccion');
+                        turnos.forEach(turno => {
+                            if(turno.querySelectorAll('.fila-empleado').length === 0) {
+                                turno.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+            } else {
+                btn.innerHTML = "Ver Resumen / Pizarra";
+                btn.style.backgroundColor = "var(--amarillo)";
+                btn.style.border = "none";
+
+                document.querySelectorAll('.dia-card, .turno-seccion').forEach(el => {
+                    el.style.display = 'block';
+                });
+            }
+        }
+
+        function generarTextoHorarios() {
+            let mensaje = "*Horarios Semanales - Estancia San Francisco*\n\n";
+            let hayDatos = false;
+
+            dias.forEach(dia => {
+                const idDia = dia.toLowerCase().replace('é', 'e').replace('á', 'a');
+                
+                if (idDia !== 'domingo') {
+                    const filasManana = document.querySelectorAll(`#${idDia}-manana .fila-empleado`);
+                    const filasTarde = document.querySelectorAll(`#${idDia}-tarde .fila-empleado`);
+                    
+                    if (filasManana.length > 0 || filasTarde.length > 0) {
+                        hayDatos = true;
+                        mensaje += `*${dia}*\n`;
+
+                        if (filasManana.length > 0) {
+                            mensaje += `  _Mañana:_\n`;
+                            filasManana.forEach(fila => {
+                                const nombre = fila.querySelector('.sel-nombre').value;
+                                const entrada = "09:00"; 
+                                const salida = fila.querySelector('.sel-salida').value;
+                                if(nombre) mensaje += `  - ${nombre}: ${entrada} a ${salida}\n`;
+                            });
+                        }
+
+                        if (filasTarde.length > 0) {
+                            mensaje += `  _Tarde:_\n`;
+                            filasTarde.forEach(fila => {
+                                const nombre = fila.querySelector('.sel-nombre').value;
+                                const entrada = fila.querySelector('.sel-entrada').value;
+                                const salida = "20:00"; 
+                                if(nombre) mensaje += `  - ${nombre}: ${entrada} a ${salida}\n`;
+                            });
+                        }
+                        mensaje += `\n`;
+                    }
+                } 
+                else {
+                    const filasDomingo = document.querySelectorAll(`#${idDia}-unico .fila-empleado`);
+                    if (filasDomingo.length > 0) {
+                        hayDatos = true;
+                        mensaje += `*${dia}*\n`;
+                        mensaje += `  _Turno Domingo:_\n`;
+                        filasDomingo.forEach(fila => {
+                            const nombre = fila.querySelector('.sel-nombre').value;
+                            if(nombre) mensaje += `  - ${nombre}: 09:00 a 13:30\n`;
+                        });
+                        mensaje += `\n`;
+                    }
+                }
+            });
+
+            if (!hayDatos) {
+                alert("No hay ningún empleado asignado en toda la semana.");
+                return null;
+            }
+            return mensaje;
+        }
+
+        function enviarWhatsApp() {
+            const mensaje = generarTextoHorarios();
+            if (mensaje) window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+
+        function copiarTexto() {
+            const mensaje = generarTextoHorarios();
+            if (mensaje) {
+                navigator.clipboard.writeText(mensaje)
+                .then(() => alert("¡Horarios copiados al portapapeles!"))
+                .catch(err => alert("No se pudo copiar el texto automáticamente."));
+            }
+        }
+    </script>
+</body>
+</html>
